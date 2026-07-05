@@ -1,0 +1,1577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>The Perfect Experience Mini-Game</title>
+<style>
+  /* ==========================================================================
+     DESIGN TOKENS
+     Theme: "Signal Path" — a telecom network trace guiding a customer
+     from frustration to trust. Dark ops-center dashboard, cyan signal
+     accent, violet for emotion, amber for effort (lower is better).
+     ========================================================================== */
+  :root{
+    --bg-deep:#050b16;
+    --bg-deep-2:#09121f;
+    --panel:#0f1e34;
+    --panel-alt:#152a49;
+    --panel-hi:#1a3155;
+    --panel-line:rgba(255,255,255,0.09);
+    --panel-line-soft:rgba(255,255,255,0.05);
+    --text-primary:#eef3fb;
+    --text-muted:#8fa3c4;
+    --text-faint:#5b7096;
+
+    --signal:#2fd1c9;
+    --signal-2:#7ef0e8;
+    --signal-dim:#1c8a86;
+    --violet:#8b83f0;
+    --violet-2:#b6afff;
+    --violet-dim:#5b55a3;
+    --amber:#f2a93b;
+    --amber-2:#ffcb7a;
+    --amber-dim:#a4711f;
+    --danger:#ff5f6d;
+    --danger-2:#ff939c;
+    --danger-dim:#a83947;
+
+    --radius-xl:26px;
+    --radius-lg:20px;
+    --radius-md:14px;
+    --radius-sm:9px;
+
+    --font-display: -apple-system, "Segoe UI", system-ui, Roboto, Helvetica, Arial, sans-serif;
+    --font-body: -apple-system, "Segoe UI", system-ui, Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+
+    --ease: cubic-bezier(.2,.8,.2,1);
+  }
+
+  *,*::before,*::after{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:
+      radial-gradient(1100px 620px at 12% -8%, rgba(47,209,201,0.11), transparent 60%),
+      radial-gradient(900px 520px at 105% 4%, rgba(139,131,240,0.09), transparent 55%),
+      radial-gradient(700px 500px at 50% 110%, rgba(242,169,59,0.05), transparent 60%),
+      linear-gradient(180deg, var(--bg-deep) 0%, var(--bg-deep-2) 100%);
+    color:var(--text-primary);
+    font-family:var(--font-body);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+    overflow-x:hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; }
+  }
+
+  button{ font-family:inherit; }
+  button:focus-visible, input:focus-visible, .option:focus-visible{
+    outline:2px solid var(--signal);
+    outline-offset:3px;
+  }
+
+  .app{
+    max-width:640px;
+    margin:0 auto;
+    padding:18px 16px 56px;
+    min-height:100vh;
+  }
+
+  /* ---------- Topbar ---------- */
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:4px 2px 16px;
+    border-bottom:1px solid var(--panel-line);
+    margin-bottom:20px;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand-mark{
+    width:32px; height:32px; border-radius:9px;
+    background:linear-gradient(135deg, var(--signal), var(--violet));
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px; font-weight:800; color:#04211f;
+    font-family:var(--font-mono);
+    flex:none;
+    box-shadow:0 4px 14px -4px rgba(47,209,201,0.5);
+  }
+  .brand-text{
+    font-family:var(--font-display);
+    font-size:12.5px; font-weight:700;
+    letter-spacing:0.13em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+  }
+  .agent-pill{
+    font-family:var(--font-mono);
+    font-size:12px;
+    color:var(--signal-2);
+    background:var(--panel);
+    border:1px solid rgba(47,209,201,0.35);
+    padding:5px 12px;
+    border-radius:100px;
+    max-width:50%;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  /* ---------- Screens ---------- */
+  .screen{ display:none; animation:fadeIn .4s var(--ease); }
+  .screen.active{ display:block; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+  h1.title{
+    font-family:var(--font-display);
+    font-size:clamp(27px,6.5vw,35px);
+    font-weight:800;
+    letter-spacing:-0.01em;
+    margin:6px 0 4px;
+    background:linear-gradient(90deg, #ffffff, var(--signal-2) 95%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .subtitle{ color:var(--text-muted); font-size:15.5px; max-width:52ch; margin:0 0 22px; }
+
+  .card{
+    background:linear-gradient(180deg, var(--panel), var(--panel) 60%, var(--panel-alt));
+    border:1px solid var(--panel-line);
+    border-radius:var(--radius-lg);
+    padding:18px;
+    box-shadow:0 16px 34px -22px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.03);
+    position:relative;
+  }
+  .card + .card{ margin-top:14px; }
+
+  .eyebrow{
+    font-family:var(--font-display);
+    font-size:11.5px;
+    font-weight:700;
+    letter-spacing:0.13em;
+    text-transform:uppercase;
+    color:var(--signal);
+    margin:0 0 8px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:6px; height:6px; border-radius:50%;
+    background:var(--signal);
+    box-shadow:0 0 0 4px rgba(47,209,201,0.15);
+  }
+
+  .field-label{ font-size:13px; color:var(--text-muted); margin-bottom:6px; display:block; }
+  input.text-input{
+    width:100%;
+    background:var(--bg-deep);
+    border:1px solid var(--panel-line);
+    color:var(--text-primary);
+    border-radius:var(--radius-sm);
+    padding:13px 14px;
+    font-size:16px;
+    margin-bottom:4px;
+  }
+  input.text-input::placeholder{ color:var(--text-faint); }
+
+  ol.rules, ul.roles{ margin:0; padding-left:20px; color:var(--text-muted); font-size:14.5px; }
+  ol.rules li{ margin-bottom:6px; }
+  ul.roles{ list-style:none; padding-left:0; display:grid; gap:8px; }
+  ul.roles li{
+    background:var(--bg-deep);
+    border:1px solid var(--panel-line);
+    border-radius:var(--radius-sm);
+    padding:10px 12px;
+    color:var(--text-primary);
+    font-size:14px;
+    display:flex; align-items:center; gap:9px;
+  }
+  ul.roles li::before{ content:""; width:6px; height:6px; border-radius:2px; background:var(--signal); flex:none; transform:rotate(45deg); }
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    width:100%;
+    padding:16px 18px;
+    border-radius:var(--radius-md);
+    border:none;
+    font-family:var(--font-display);
+    font-size:15.5px;
+    font-weight:700;
+    letter-spacing:0.01em;
+    cursor:pointer;
+    transition:transform .15s var(--ease), box-shadow .15s var(--ease), background .15s var(--ease);
+  }
+  .btn:active{ transform:scale(0.98); }
+  .btn-primary{
+    background:linear-gradient(135deg, var(--signal-2), var(--signal) 55%, #189a94);
+    color:#03231f;
+    box-shadow:0 12px 26px -10px rgba(47,209,201,0.55);
+  }
+  .btn-primary:hover{ box-shadow:0 16px 32px -10px rgba(47,209,201,0.72); }
+  .btn-primary::after{ content:"→"; font-weight:800; }
+  .btn-ghost{ background:transparent; color:var(--text-primary); border:1px solid var(--panel-line); }
+  .btn-ghost:hover{ border-color:var(--signal); color:var(--signal-2); }
+  .btn-row{ display:flex; gap:10px; margin-top:14px; }
+  .btn-row .btn{ flex:1; }
+
+  /* ---------- Customer Profile Panel ---------- */
+  .profile-card{
+    display:flex;
+    align-items:center;
+    gap:13px;
+    margin-bottom:14px;
+  }
+  .avatar{
+    width:52px; height:52px;
+    border-radius:50%;
+    flex:none;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-display);
+    font-weight:800;
+    font-size:16px;
+    color:#04211f;
+    background:conic-gradient(from 200deg, var(--signal-2), var(--violet-2), var(--amber-2), var(--signal-2));
+    position:relative;
+    box-shadow:0 0 0 3px var(--bg-deep), 0 0 0 4px var(--mood-color, var(--signal));
+    transition:box-shadow .5s var(--ease);
+  }
+  .avatar::after{
+    content:"";
+    position:absolute; inset:3px;
+    border-radius:50%;
+    background:var(--panel-alt);
+  }
+  .avatar span{ position:relative; z-index:1; color:var(--text-primary); }
+  .profile-info{ flex:1; min-width:0; }
+  .profile-name{ font-family:var(--font-display); font-weight:800; font-size:15px; margin-bottom:2px; }
+  .profile-tags{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+  .profile-tag{
+    font-family:var(--font-mono);
+    font-size:10.5px;
+    color:var(--text-muted);
+    background:var(--bg-deep);
+    border:1px solid var(--panel-line);
+    padding:3px 8px;
+    border-radius:100px;
+    white-space:nowrap;
+  }
+  .mood-dot{
+    display:inline-block; width:7px; height:7px; border-radius:50%;
+    background:var(--mood-color, var(--signal));
+    margin-right:5px;
+    box-shadow:0 0 6px var(--mood-color, var(--signal));
+  }
+
+  /* ---------- Journey Path (signature element): vertical mission rail ---------- */
+  .journey-wrap{
+    margin-bottom:16px;
+    padding:16px 14px;
+    border-radius:var(--radius-lg);
+  }
+  .journey-title{
+    display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px;
+  }
+  .journey-title .eyebrow{ margin-bottom:0; }
+  .journey-count{ font-family:var(--font-mono); font-size:11.5px; color:var(--text-faint); }
+
+  .rail{ position:relative; padding-left:6px; }
+  .rail-item{
+    position:relative;
+    display:flex;
+    align-items:flex-start;
+    gap:13px;
+    padding-bottom:18px;
+  }
+  .rail-item:last-child{ padding-bottom:0; }
+  .rail-connector{
+    position:absolute;
+    left:15px; top:30px; bottom:-2px;
+    width:2px;
+    background:var(--panel-line);
+    z-index:0;
+  }
+  .rail-item:last-child .rail-connector{ display:none; }
+  .rail-item.done .rail-connector{ background:linear-gradient(180deg, var(--signal), var(--signal-dim)); }
+
+  .rail-node{
+    width:30px; height:30px;
+    border-radius:9px;
+    border:2px solid var(--panel-line);
+    background:var(--bg-deep);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-mono);
+    font-size:12px; font-weight:700;
+    color:var(--text-faint);
+    flex:none;
+    z-index:1;
+    transition:all .35s var(--ease);
+  }
+  .rail-item.done .rail-node{
+    background:rgba(47,209,201,0.14);
+    border-color:var(--signal);
+    color:var(--signal-2);
+  }
+  .rail-item.active .rail-node{
+    background:linear-gradient(135deg, var(--signal-2), var(--signal));
+    border-color:var(--signal-2);
+    color:#04211f;
+    box-shadow:0 0 0 5px rgba(47,209,201,0.16);
+    animation:railPulse 2.4s ease-in-out infinite;
+  }
+  @keyframes railPulse{
+    0%,100%{ box-shadow:0 0 0 5px rgba(47,209,201,0.16); }
+    50%{ box-shadow:0 0 0 9px rgba(47,209,201,0.08); }
+  }
+  .rail-body{ flex:1; padding-top:4px; }
+  .rail-label{ font-size:14px; font-weight:700; color:var(--text-faint); transition:color .3s var(--ease); }
+  .rail-item.active .rail-label{ color:var(--text-primary); }
+  .rail-item.done .rail-label{ color:var(--text-muted); }
+  .rail-status{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.04em; color:var(--text-faint); margin-top:2px; text-transform:uppercase; }
+  .rail-item.active .rail-status{ color:var(--signal); }
+  .rail-item.done .rail-status{ color:var(--signal-dim); }
+
+  /* Collapsed / compact rail toggle for small screens once game starts */
+  .rail.compact .rail-item:not(.active){ display:none; }
+  .rail.compact .rail-connector{ display:none; }
+  .rail-toggle{
+    display:none;
+    text-align:center;
+    font-family:var(--font-mono);
+    font-size:11px;
+    color:var(--text-faint);
+    margin-top:10px;
+    cursor:pointer;
+    user-select:none;
+  }
+
+  /* ---------- Meters ---------- */
+  .meters{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:16px; }
+  .meter{
+    background:var(--panel);
+    border:1px solid var(--panel-line);
+    border-radius:var(--radius-md);
+    padding:12px 12px;
+    position:relative;
+    overflow:hidden;
+  }
+  .meter-top{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
+  .meter-name{ font-size:10.5px; letter-spacing:0.09em; text-transform:uppercase; color:var(--text-muted); font-weight:700; }
+  .meter-val{ font-family:var(--font-mono); font-size:14px; font-weight:800; }
+  .meter-track{ height:7px; background:var(--bg-deep); border-radius:100px; overflow:hidden; }
+  .meter-fill{ height:100%; border-radius:100px; transition:width .5s var(--ease); position:relative; }
+  .meter-fill::after{
+    content:""; position:absolute; inset:0;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,0.35));
+    opacity:0.5;
+  }
+  .meter.trust .meter-val{ color:var(--signal-2); }
+  .meter.trust .meter-fill{ background:linear-gradient(90deg, var(--signal-dim), var(--signal)); }
+  .meter.emotion .meter-val{ color:var(--violet-2); }
+  .meter.emotion .meter-fill{ background:linear-gradient(90deg, var(--violet-dim), var(--violet)); }
+  .meter.effort .meter-val{ color:var(--amber-2); }
+  .meter.effort .meter-fill{ background:linear-gradient(90deg, var(--amber-dim), var(--amber)); }
+  .meter-caption{
+    font-size:9.5px;
+    color:var(--text-faint);
+    text-align:right;
+    margin-top:5px;
+    letter-spacing:0.02em;
+  }
+  .meter-flash{
+    position:absolute; top:8px; right:10px;
+    font-family:var(--font-mono); font-size:11px; font-weight:800;
+    opacity:0; transform:translateY(4px);
+    transition:opacity .3s var(--ease), transform .3s var(--ease);
+    pointer-events:none;
+  }
+  .meter-flash.show{ opacity:1; transform:translateY(0); }
+  .meter-flash.up{ color:var(--signal-2); }
+  .meter-flash.down{ color:var(--danger-2); }
+
+  /* ---------- Stage panel ---------- */
+  .stage-tag{ display:inline-block; font-family:var(--font-mono); font-size:11px; color:var(--text-faint); margin-bottom:7px; letter-spacing:0.04em; }
+  .stage-title{ font-family:var(--font-display); font-size:21px; font-weight:800; margin:0 0 8px; }
+  .moment-box{
+    background:rgba(139,131,240,0.08);
+    border:1px solid rgba(139,131,240,0.28);
+    border-radius:var(--radius-sm);
+    padding:11px 13px;
+    font-size:13px;
+    color:#cfc9fb;
+    margin:0 0 14px;
+  }
+  .moment-box b{ color:var(--violet-2); }
+
+  .customer-msg{
+    background:var(--bg-deep);
+    border:1px solid var(--panel-line);
+    border-left:3px solid var(--signal);
+    border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+    padding:13px 14px;
+    margin-bottom:14px;
+    font-size:15px;
+  }
+  .customer-msg .who{ display:block; font-family:var(--font-mono); font-size:11px; color:var(--text-faint); margin-bottom:5px; letter-spacing:0.06em; text-transform:uppercase; }
+
+  /* Moment of Truth / Surprise card — visually distinct dramatic card */
+  .surprise-card{
+    position:relative;
+    background:linear-gradient(160deg, rgba(242,169,59,0.14), rgba(242,169,59,0.03) 60%);
+    border:1px solid rgba(242,169,59,0.4);
+    border-radius:var(--radius-md);
+    padding:15px 15px 14px;
+    margin-bottom:16px;
+    box-shadow:0 14px 26px -18px rgba(242,169,59,0.35);
+  }
+  .surprise-card::before{
+    content:"MOMENT OF TRUTH";
+    display:inline-block;
+    font-family:var(--font-display);
+    font-size:10.5px;
+    font-weight:800;
+    letter-spacing:0.14em;
+    color:#0d0a04;
+    background:linear-gradient(90deg, var(--amber-2), var(--amber));
+    padding:4px 10px;
+    border-radius:100px;
+    margin-bottom:10px;
+  }
+  .surprise-card .who{ display:block; font-family:var(--font-mono); font-size:11px; color:var(--amber-2); margin-bottom:5px; letter-spacing:0.07em; text-transform:uppercase; font-weight:700; }
+  .surprise-card .msg{ font-size:15.5px; font-weight:600; }
+
+  .question{ font-weight:700; font-size:15.5px; margin:0 0 12px; }
+
+  .options{ display:grid; gap:10px; }
+  .option{
+    text-align:left;
+    background:var(--bg-deep);
+    border:1px solid var(--panel-line);
+    border-radius:var(--radius-md);
+    padding:14px 14px;
+    color:var(--text-primary);
+    font-size:14.5px;
+    cursor:pointer;
+    transition:border-color .15s var(--ease), transform .1s var(--ease), background .15s var(--ease), box-shadow .15s var(--ease);
+  }
+  .option:hover:not(:disabled){ border-color:var(--signal); background:var(--panel-alt); box-shadow:0 8px 20px -14px rgba(47,209,201,0.5); }
+  .option:active:not(:disabled){ transform:scale(0.99); }
+  .option .opt-key{ font-family:var(--font-mono); color:var(--signal-dim); margin-right:9px; font-weight:800; }
+  .option:disabled{ cursor:default; opacity:0.5; }
+  .option.chosen{ border-color:var(--signal); background:var(--panel-alt); opacity:1; }
+
+  /* Feedback panel after choosing */
+  .feedback{
+    margin-top:8px;
+    border-radius:var(--radius-md);
+    padding:16px;
+    border:1px solid var(--panel-line);
+    background:linear-gradient(180deg, var(--panel-alt), var(--panel-hi));
+    animation:feedbackIn .35s var(--ease);
+  }
+  @keyframes feedbackIn{ from{ opacity:0; transform:translateY(-6px); } to{ opacity:1; transform:translateY(0); } }
+
+  .result-badge{
+    display:inline-block;
+    font-family:var(--font-display);
+    font-size:11px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase;
+    padding:5px 11px; border-radius:100px; margin-bottom:10px;
+  }
+  .result-Strong{ background:rgba(47,209,201,0.16); color:var(--signal-2); border:1px solid rgba(47,209,201,0.45); }
+  .result-Partial{ background:rgba(242,169,59,0.16); color:var(--amber-2); border:1px solid rgba(242,169,59,0.45); }
+  .result-Risky{ background:rgba(255,95,109,0.14); color:var(--danger-2); border:1px solid rgba(255,95,109,0.42); }
+  .result-Critical{ background:rgba(255,95,109,0.24); color:#ffc1c6; border:1px solid rgba(255,95,109,0.6); }
+
+  .fb-section-label{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.07em; text-transform:uppercase; color:var(--text-faint); margin:12px 0 4px; }
+  .fb-section-label:first-of-type{ margin-top:0; }
+  .feedback-text{ font-size:14px; color:var(--text-primary); }
+
+  .consequence-line{
+    display:flex; gap:9px; align-items:flex-start;
+    font-size:13.5px;
+    color:var(--text-primary);
+    background:var(--bg-deep);
+    border:1px solid var(--panel-line);
+    border-radius:var(--radius-sm);
+    padding:10px 12px;
+  }
+  .consequence-line::before{ content:"⟡"; color:var(--signal); flex:none; font-size:13px; margin-top:1px; }
+  .consequence-line.warn::before{ content:"⚠"; color:var(--danger-2); }
+
+  .impact-row{ display:flex; gap:16px; flex-wrap:wrap; font-family:var(--font-mono); font-size:12.5px; color:var(--text-muted); }
+  .impact-row span b{ color:var(--text-primary); }
+
+  .tool-line{ font-size:13px; color:var(--violet-2); }
+  .tool-line.missed{ color:var(--text-faint); }
+  .tool-line.missed b{ color:var(--danger-2); font-weight:700; }
+  .tool-line b{ color:var(--violet-2); }
+
+  .reflection-line{
+    margin-top:12px;
+    padding:10px 12px;
+    background:rgba(139,131,240,0.07);
+    border:1px dashed rgba(139,131,240,0.4);
+    border-radius:var(--radius-sm);
+    font-size:13px;
+    font-style:italic;
+    color:var(--violet-2);
+  }
+
+  .continue-btn{ margin-top:16px; }
+
+  /* ---------- Customer Memory stage ---------- */
+  .memory-frame{
+    position:relative;
+    border-radius:var(--radius-lg);
+    padding:2px;
+    background:linear-gradient(135deg, var(--signal), var(--violet), var(--amber));
+    margin-bottom:14px;
+  }
+  .memory-inner{
+    background:var(--panel);
+    border-radius:calc(var(--radius-lg) - 2px);
+    padding:20px 18px;
+    text-align:center;
+  }
+  .memory-avatar{
+    width:64px; height:64px; margin:0 auto 12px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:conic-gradient(from 200deg, var(--signal-2), var(--violet-2), var(--amber-2), var(--signal-2));
+    position:relative;
+  }
+  .memory-avatar::after{ content:""; position:absolute; inset:3px; border-radius:50%; background:var(--panel); }
+  .memory-avatar span{ position:relative; z-index:1; font-family:var(--font-display); font-weight:800; font-size:19px; }
+  .memory-statement{ font-family:var(--font-display); font-size:17px; font-weight:700; margin:0 0 8px; line-height:1.4; }
+  .memory-caption{ font-size:13px; color:var(--text-muted); font-style:italic; max-width:38ch; margin:0 auto; }
+
+  /* ---------- Final report ---------- */
+  .report-frame{
+    position:relative;
+    border-radius:var(--radius-xl);
+    padding:2px;
+    background:linear-gradient(140deg, var(--signal), var(--violet) 45%, var(--amber));
+    margin-bottom:14px;
+  }
+  .report-inner{
+    background:linear-gradient(180deg, var(--panel), var(--bg-deep-2));
+    border-radius:calc(var(--radius-xl) - 2px);
+    padding:24px 20px 20px;
+  }
+  .report-head{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; }
+  .report-caseid{ font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint); text-align:right; line-height:1.5; }
+  .report-agent{ font-family:var(--font-display); font-weight:800; font-size:15px; color:var(--signal-2); }
+  .report-agent-lbl{ font-family:var(--font-mono); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-faint); margin-bottom:3px; }
+
+  .final-hero{ text-align:center; padding:16px 4px 6px; }
+  .final-score{ font-family:var(--font-mono); font-size:52px; font-weight:800; color:var(--signal-2); line-height:1; margin:6px 0 2px; text-shadow:0 0 30px rgba(47,209,201,0.35); }
+  .final-score span{ font-size:22px; color:var(--text-faint); }
+  .final-line{ color:var(--text-muted); font-size:15px; margin:0 0 6px; }
+  .badge-pill{
+    display:inline-block; margin-top:10px; padding:9px 20px; border-radius:100px;
+    font-family:var(--font-display); font-weight:800; font-size:13px; letter-spacing:0.04em;
+    background:linear-gradient(135deg, var(--signal-2), var(--violet-2));
+    color:#04121a;
+    box-shadow:0 10px 24px -10px rgba(139,131,240,0.5);
+  }
+
+  .stat-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:18px; }
+  .stat-box{ background:var(--bg-deep); border:1px solid var(--panel-line); border-radius:var(--radius-sm); padding:12px 8px; text-align:center; }
+  .stat-box .lbl{ font-size:10px; text-transform:uppercase; letter-spacing:0.07em; color:var(--text-faint); margin-bottom:5px; }
+  .stat-box .val{ font-family:var(--font-mono); font-weight:800; font-size:19px; }
+
+  .memory-statement-final{
+    margin-top:16px;
+    background:var(--bg-deep);
+    border-left:3px solid var(--violet);
+    border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+    padding:12px 14px;
+    font-size:13.5px;
+    color:var(--text-primary);
+  }
+  .memory-statement-final.effort-note{
+    border-left-color:var(--amber);
+    color:var(--amber-2);
+    font-size:13px;
+  }
+
+  .mini-heading{ font-family:var(--font-display); font-size:12px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-muted); margin:0 0 8px; }
+  .moment-line{ background:var(--bg-deep); border:1px solid var(--panel-line); border-radius:var(--radius-sm); padding:11px 12px; font-size:13.5px; margin-bottom:8px; }
+  .moment-line b{ display:block; color:var(--text-primary); margin-bottom:3px; font-size:13.5px; }
+  .moment-line.strong-m{ border-left:3px solid var(--signal); }
+  .moment-line.weak-m{ border-left:3px solid var(--danger); }
+
+  .habit-box{ background:rgba(47,209,201,0.06); border:1px solid rgba(47,209,201,0.3); border-radius:var(--radius-sm); padding:13px 14px; font-size:14px; }
+
+  details.collapsible{ border:1px solid var(--panel-line); border-radius:var(--radius-md); padding:0; overflow:hidden; background:var(--panel); }
+  details.collapsible + details.collapsible{ margin-top:12px; }
+  details.collapsible summary{ cursor:pointer; padding:16px; font-family:var(--font-display); font-weight:700; font-size:14.5px; list-style:none; display:flex; align-items:center; justify-content:space-between; }
+  details.collapsible summary::-webkit-details-marker{ display:none; }
+  details.collapsible summary::after{ content:"+"; font-size:20px; color:var(--signal); font-weight:400; }
+  details.collapsible[open] summary::after{ content:"–"; }
+  details.collapsible .inner{ padding:0 16px 16px; }
+
+  .review-item{ border-bottom:1px solid var(--panel-line); padding:13px 0; }
+  .review-item:last-child{ border-bottom:none; }
+  .review-item .stage-name{ font-weight:700; font-size:13.5px; margin-bottom:5px; display:flex; align-items:center; flex-wrap:wrap; gap:6px; }
+  .review-item .choice-text{ font-size:13px; color:var(--text-muted); margin-bottom:7px; }
+  .review-item .reason{ font-size:12.5px; color:var(--text-faint); margin-top:5px; }
+  .review-item .consequence-line{ margin-top:7px; }
+
+  ol.debrief-logic, ol.debrief-q{ margin:0; padding-left:18px; font-size:13.5px; color:var(--text-muted); }
+  ol.debrief-logic li, ol.debrief-q li{ margin-bottom:8px; }
+  .closing-line{ margin-top:14px; padding:13px 14px; background:var(--bg-deep); border-left:3px solid var(--violet); border-radius:0 var(--radius-sm) var(--radius-sm) 0; font-style:italic; font-size:13.5px; color:#cfc9fb; }
+
+  .copy-toast{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    background:var(--panel-hi); border:1px solid var(--signal); color:var(--text-primary);
+    padding:11px 20px; border-radius:100px; font-size:13px;
+    box-shadow:0 10px 30px -10px rgba(0,0,0,0.6); z-index:50;
+    opacity:0; pointer-events:none; transition:opacity .25s var(--ease), transform .25s var(--ease);
+  }
+  .copy-toast.show{ opacity:1; transform:translateX(-50%) translateY(-4px); }
+
+  @media (min-width:600px){
+    .app{ padding-top:26px; }
+  }
+
+  .score-pill{
+    font-family:var(--font-mono);
+    font-size:12px;
+    color:var(--amber-2);
+    background:var(--panel);
+    border:1px solid rgba(242,169,59,0.4);
+    padding:5px 12px;
+    border-radius:100px;
+    white-space:nowrap;
+  }
+  .pill-row{ display:flex; align-items:center; gap:8px; }
+
+  .goal-line{
+    background:rgba(47,209,201,0.08);
+    border:1px solid rgba(47,209,201,0.3);
+    border-radius:var(--radius-sm);
+    padding:11px 13px;
+    font-size:14px;
+    font-weight:700;
+    color:var(--signal-2);
+    text-align:center;
+  }
+
+  .scoring-block{ font-size:13.5px; color:var(--text-muted); }
+  .scoring-block .row{ margin-bottom:6px; }
+  .scoring-block b{ color:var(--text-primary); }
+  .scoring-divider{ border:none; border-top:1px solid var(--panel-line); margin:12px 0; }
+  .points-line{
+    font-family:var(--font-mono);
+    font-size:12.5px;
+    color:var(--text-muted);
+    background:var(--bg-deep);
+    border:1px solid var(--panel-line);
+    border-radius:var(--radius-sm);
+    padding:9px 11px;
+    margin-top:4px;
+  }
+
+  .impact-compact{
+    font-family:var(--font-mono);
+    font-size:13px;
+    color:var(--text-muted);
+    margin:2px 0;
+  }
+  .impact-compact b{ color:var(--text-primary); }
+
+  .fb-line{ font-size:13.5px; color:var(--text-primary); margin:8px 0; }
+  .fb-label{
+    font-family:var(--font-mono);
+    font-size:10px;
+    letter-spacing:0.07em;
+    text-transform:uppercase;
+    color:var(--text-faint);
+    margin-top:10px;
+    margin-bottom:2px;
+  }
+  .fb-label:first-of-type{ margin-top:0; }
+
+  .score-band{
+    display:flex;
+    align-items:baseline;
+    justify-content:center;
+    gap:8px;
+    margin-top:14px;
+    padding:10px 14px;
+    background:var(--bg-deep);
+    border:1px solid rgba(242,169,59,0.35);
+    border-radius:var(--radius-sm);
+  }
+  .score-band-label{
+    font-family:var(--font-display);
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--amber-2);
+  }
+  .score-band-value{
+    font-family:var(--font-mono);
+    font-size:19px;
+    font-weight:800;
+    color:var(--amber-2);
+  }
+
+  .review-correct{
+    margin-top:8px;
+    background:rgba(47,209,201,0.06);
+    border:1px solid rgba(47,209,201,0.25);
+    border-radius:var(--radius-sm);
+    padding:9px 11px;
+    font-size:12.5px;
+  }
+  .review-correct .cap{
+    font-family:var(--font-mono);
+    font-size:10px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--signal);
+    margin-bottom:4px;
+    display:block;
+  }
+  .points-badge{
+    font-family:var(--font-mono);
+    font-size:11px;
+    color:var(--text-muted);
+    background:var(--bg-deep);
+    border:1px solid var(--panel-line);
+    border-radius:100px;
+    padding:2px 9px;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">CX</div>
+      <div class="brand-text">Customer Service Excellence &middot; Module 1</div>
+    </div>
+    <div class="pill-row">
+      <div class="score-pill" id="scorePill" style="display:none;">Score: 0/15</div>
+      <div class="agent-pill" id="agentPill" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- ================= WELCOME SCREEN ================= -->
+  <section class="screen active" id="screen-welcome">
+    <h1 class="title">The Perfect Experience Mini-Game</h1>
+    <p class="subtitle">Guide one customer through a full chat journey. Every response changes what the customer remembers.</p>
+
+    <div class="card">
+      <p class="eyebrow">Mission Brief</p>
+      <p style="font-size:14.5px; color:var(--text-primary); margin:0;">
+        You are handling a customer whose internet is down again for the third time this week. The customer works from home and is already frustrated.
+        Your job is to protect trust, reduce effort, and keep the customer guided through the journey.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="goal-line">Your Goal: Build Trust. Calm Emotion. Reduce Effort.</div>
+    </div>
+
+    <div class="card">
+      <p class="eyebrow">How To Play</p>
+      <ol class="rules">
+        <li>Read the customer situation.</li>
+        <li>Choose the best response.</li>
+        <li>Watch how your decision affects Trust, Emotion, and Effort.</li>
+        <li>Complete the journey.</li>
+        <li>Review your final customer memory.</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <p class="eyebrow">How Scoring Works</p>
+      <div class="scoring-block">
+        <div class="row"><b>Trust</b> &mdash; Did the response build confidence?</div>
+        <div class="row"><b>Emotion</b> &mdash; Did the response calm or escalate the customer?</div>
+        <div class="row"><b>Effort</b> &mdash; Did the response make the customer work harder or easier?</div>
+        <div class="row">Higher Trust and Emotion are better. Lower Effort is better.</div>
+        <hr class="scoring-divider">
+        <div class="points-line">
+          Each of the 5 main decisions also earns points:<br>
+          Strong = 3&nbsp;pts &nbsp;|&nbsp; Partial = 1&nbsp;pt &nbsp;|&nbsp; Risky or Critical = 0&nbsp;pts<br>
+          <b>Total Experience Score = 15 points</b>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <label class="field-label" for="agentNameInput">Agent name (optional)</label>
+      <input class="text-input" id="agentNameInput" type="text" placeholder="e.g. Sarah" maxlength="40">
+    </div>
+
+    <button class="btn btn-primary" id="startBtn" style="margin-top:18px;">Start Journey</button>
+  </section>
+
+  <!-- ================= GAME SCREEN ================= -->
+  <section class="screen" id="screen-game">
+
+    <div class="card profile-card">
+      <div class="avatar" id="avatarEl"><span>RW</span></div>
+      <div class="profile-info">
+        <div class="profile-name">Remote Worker &middot; Chat Customer</div>
+        <div class="profile-tags">
+          <span class="profile-tag">Issue: Internet down again</span>
+          <span class="profile-tag">Context: 3rd time this week</span>
+          <span class="profile-tag" id="moodTag"><span class="mood-dot"></span>Frustrated, still seeking help</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card journey-wrap">
+      <div class="journey-title">
+        <span class="eyebrow">Customer Journey</span>
+        <span class="journey-count" id="journeyCount">Stage 1 of 6</span>
+      </div>
+      <div class="rail" id="journeyPath"></div>
+    </div>
+
+    <div class="meters">
+      <div class="meter trust">
+        <div class="meter-flash" id="trustFlash"></div>
+        <div class="meter-top"><span class="meter-name">Trust</span><span class="meter-val" id="trustVal">5/10</span></div>
+        <div class="meter-track"><div class="meter-fill" id="trustFill" style="width:50%"></div></div>
+      </div>
+      <div class="meter emotion">
+        <div class="meter-flash" id="emotionFlash"></div>
+        <div class="meter-top"><span class="meter-name">Emotion</span><span class="meter-val" id="emotionVal">5/10</span></div>
+        <div class="meter-track"><div class="meter-fill" id="emotionFill" style="width:50%"></div></div>
+      </div>
+      <div class="meter effort">
+        <div class="meter-flash" id="effortFlash"></div>
+        <div class="meter-top"><span class="meter-name">Effort</span><span class="meter-val" id="effortVal">5/10</span></div>
+        <div class="meter-track"><div class="meter-fill" id="effortFill" style="width:50%"></div></div>
+        <div class="meter-caption">Lower is better</div>
+      </div>
+    </div>
+
+    <div class="card" id="stagePanel"><!-- rendered by JS --></div>
+  </section>
+
+  <!-- ================= FINAL SCREEN ================= -->
+  <section class="screen" id="screen-final">
+
+    <div class="report-frame">
+      <div class="report-inner">
+        <div class="report-head">
+          <div>
+            <div class="report-agent-lbl">Agent</div>
+            <div class="report-agent" id="reportAgent">Unnamed Agent</div>
+          </div>
+          <div class="report-caseid" id="reportCaseId">CASE FILE<br>&mdash;</div>
+        </div>
+
+        <div class="final-hero">
+          <p class="eyebrow" style="justify-content:center;">Journey Complete</p>
+          <p class="final-line" id="finalLine">Your customer left with</p>
+          <div class="final-score" id="finalScore">&ndash;<span>/10 trust</span></div>
+          <div class="badge-pill" id="badgePill">Badge</div>
+
+          <div class="score-band">
+            <span class="score-band-label">Experience Score</span>
+            <span class="score-band-value" id="statScore">&ndash;/15</span>
+          </div>
+
+          <div class="stat-grid">
+            <div class="stat-box"><div class="lbl">Trust</div><div class="val" id="statTrust">&ndash;</div></div>
+            <div class="stat-box"><div class="lbl">Emotion</div><div class="val" id="statEmotion">&ndash;</div></div>
+            <div class="stat-box"><div class="lbl">Effort &mdash; lower is better</div><div class="val" id="statEffort">&ndash;</div></div>
+          </div>
+
+          <div class="memory-statement-final" id="memoryStatementFinal"></div>
+          <div class="memory-statement-final effort-note" id="effortNote" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="mini-heading">Strongest Journey Moment</p>
+      <div class="moment-line strong-m" id="strongestMoment"></div>
+      <p class="mini-heading" style="margin-top:14px;">Weakest Journey Moment</p>
+      <div class="moment-line weak-m" id="weakestMoment"></div>
+    </div>
+
+    <div class="card">
+      <p class="mini-heading">One Habit To Apply Tomorrow</p>
+      <div class="habit-box" id="habitBox"></div>
+    </div>
+
+    <details class="collapsible">
+      <summary>Review My Journey</summary>
+      <div class="inner" id="reviewList"></div>
+    </details>
+
+    <details class="collapsible">
+      <summary>Facilitator Debrief Mode</summary>
+      <div class="inner">
+        <p class="mini-heading" style="margin-top:10px;">Trainer Discussion Points</p>
+        <ol class="debrief-logic">
+          <li>The longest response is not always the strongest response.</li>
+          <li>Empathy without action is incomplete.</li>
+          <li>Action without emotional acknowledgment can feel cold.</li>
+          <li>Overpromising creates future trust damage.</li>
+          <li>Asking too many questions increases effort.</li>
+          <li>A strong response combines care, clarity, ownership, and next step.</li>
+          <li>A perfect experience does not mean immediate resolution; it means the customer feels guided and not left alone.</li>
+        </ol>
+        <p class="mini-heading" style="margin-top:16px;">Debrief Questions</p>
+        <ol class="debrief-q">
+          <li>Which stage was your most important moment of truth?</li>
+          <li>Where could trust have been lost quickly?</li>
+          <li>Which response reduced customer effort the most?</li>
+          <li>What made the customer feel guided?</li>
+          <li>Where did you avoid a generic response?</li>
+          <li>What would the customer remember from your journey?</li>
+          <li>What habit will you apply in your next real chat?</li>
+        </ol>
+        <div class="closing-line">
+          "A perfect experience does not mean the issue is solved immediately. It means the customer feels understood, guided, updated, and not left alone."
+        </div>
+      </div>
+    </details>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="copyBtn">Copy Final Result</button>
+      <button class="btn btn-primary" id="restartBtn">Restart Journey</button>
+    </div>
+  </section>
+
+</div>
+
+<div class="copy-toast" id="copyToast">Result copied to clipboard</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============================================================
+     GAME DATA
+     Correct answers are deliberately spread across different
+     letters (C, A, D, B, C) and vary in length, so the learner
+     must compare options rather than pattern-match on length
+     or on "option B" / the most empathetic-sounding line.
+
+     Each option carries:
+       shortWhy  -> one sentence shown in the compact gameplay feedback
+       longWhy   -> fuller explanation shown only in Review My Journey
+       tool      -> present only on the correct/strong option
+     Each stage carries:
+       correctKey  -> which option is strongest, used to show the
+                      "strongest response" reference in Review My Journey
+       primaryTool -> the concept missed when a non-strong option is chosen
+     ============================================================ */
+
+  var STAGES = [
+    {
+      key:"first_response",
+      tileLabel:"First Response",
+      question:"Choose the best first response.",
+      moment:"The first response shapes the customer's trust.",
+      customerMessage:"My internet is down again. This is the third time this week, and I work from home.",
+      primaryTool:"Customer Obsession",
+      correctKey:"C",
+      options:[
+        { key:"A", text:"I understand how frustrating this must be, especially since you work from home. I'm really sorry you're dealing with this again.", result:"Partial", trust:0, emotion:1, effort:0,
+          shortWhy:"Kind, but gives no next step.",
+          longWhy:"This shows empathy but leaves the customer without a clear action, so the trust gain is limited and the customer may still feel unsure what happens next." },
+        { key:"B", text:"I'll check the line status now and update you as soon as I have information.", result:"Partial", trust:1, emotion:-1, effort:-1,
+          shortWhy:"Practical, but skips the emotional cue.",
+          longWhy:"This moves the case forward, but ignoring the repeated-issue frustration can make the response feel cold, especially on a third occurrence in one week." },
+        { key:"C", text:"I can see this is the third time this week, which must be especially disruptive with you working from home. I'm checking the line status now and will confirm the next step shortly.", result:"Strong", trust:2, emotion:2, effort:-1, tool:"Customer Obsession + Trust Loop",
+          shortWhy:"Acknowledges the repeat issue and gives a next step.",
+          longWhy:"This recognizes both the repeated disruption and the work-from-home impact, then moves straight into action — the combination that builds trust fastest." },
+        { key:"D", text:"Don't worry, I'll make sure this is completely fixed today.", result:"Risky", trust:1, emotion:1, effort:0,
+          shortWhy:"Reassuring now, but an unsafe guarantee.",
+          longWhy:"Promising a same-day fix feels good in the moment, but the agent cannot guarantee timing, and breaking this promise later would cost more trust than the current relief is worth." }
+      ]
+    },
+    {
+      key:"clarification",
+      tileLabel:"Clarification",
+      question:"What is the best clarification response?",
+      moment:"Repeated questions increase customer effort.",
+      surprise:{ who:"Customer says", msg:"I already explained this yesterday." },
+      primaryTool:"Reducing Customer Effort",
+      correctKey:"A",
+      options:[
+        { key:"A", text:"I can see you already explained this yesterday, so I've reviewed the notes. Just to confirm one thing — is the line completely down, or just slow?", result:"Strong", trust:2, emotion:1, effort:-2, tool:"Continuity + Smart Questioning",
+          shortWhy:"Uses existing notes and asks only one question.",
+          longWhy:"Reviewing previous notes before asking anything protects the customer from repeating themselves, and one focused question keeps effort low while still moving the case forward." },
+        { key:"B", text:"To help resolve this as quickly as possible, could you please confirm your line number, router model, package type, installation address, and the exact time the issue started today?", result:"Risky", trust:-1, emotion:-1, effort:2,
+          shortWhy:"Thorough-sounding, but adds a lot of extra work.",
+          longWhy:"Asking for five details at once sounds diligent, but it pushes significant effort back onto a customer who has already explained the issue once." },
+        { key:"C", text:"I understand, but could you walk me through the issue again from the beginning so I have the full picture?", result:"Risky", trust:-2, emotion:-2, effort:2,
+          shortWhy:"Ignores that the customer already explained this.",
+          longWhy:"Asking the customer to start over disregards their stated frustration and doubles their effort for no clear reason." },
+        { key:"D", text:"Thanks for letting me know. I'll check into this and get back to you.", result:"Partial", trust:-1, emotion:0, effort:0,
+          shortWhy:"Friendly, but does not use the existing notes.",
+          longWhy:"This sounds courteous but does not confirm that previous notes were reviewed, so the customer cannot be sure they won't have to repeat themselves later." }
+      ]
+    },
+    {
+      key:"waiting_time",
+      tileLabel:"Waiting Time",
+      question:"What should you send while the system check is delayed?",
+      moment:"Silence can feel like being ignored.",
+      surprise:{ who:"System note", msg:"System checking takes longer than expected." },
+      primaryTool:"Managing Chat Silence",
+      correctKey:"D",
+      options:[
+        { key:"A", text:"Just a moment please.", result:"Risky", trust:-1, emotion:-1, effort:0,
+          shortWhy:"Too short to reassure anyone.",
+          longWhy:"A one-line request to wait gives no information, so the silence that follows can easily feel like the case has been dropped." },
+        { key:"B", text:"This appears to be related to a broader network issue affecting several connections in the area, and our monitoring team is aware and investigating the root cause across the infrastructure.", result:"Risky", trust:-1, emotion:-1, effort:0,
+          shortWhy:"Detailed, but blames the network instead of reassuring.",
+          longWhy:"This offers a lot of technical framing, but it explains the delay by pointing at infrastructure rather than giving the customer a personal, reassuring update." },
+        { key:"C", text:"(No further update sent until the check is complete.)", result:"Critical", trust:-3, emotion:-2, effort:1,
+          shortWhy:"No update sent at all.",
+          longWhy:"Going quiet during a delay is one of the fastest ways to damage trust — the customer is left assuming the worst." },
+        { key:"D", text:"Still checking this on my end — it's taking a little longer than usual. I'll update you here shortly.", result:"Strong", trust:2, emotion:2, effort:-1, tool:"Managing Chat Silence + Trust Loop",
+          shortWhy:"A short, honest update that keeps ownership.",
+          longWhy:"This explains the delay in one line and promises a specific follow-up, which prevents silence from being mistaken for neglect." }
+      ]
+    },
+    {
+      key:"solution_next_step",
+      tileLabel:"Solution / Next Step",
+      question:"Choose the best next-step message.",
+      moment:"A clear next step protects the final memory.",
+      surprise:{ who:"System note", msg:"Previous ticket exists but was not resolved. The line needs technical follow-up. The issue cannot be fixed immediately in chat, but the case can be escalated with previous history included." },
+      primaryTool:"Reducing Customer Effort",
+      correctKey:"B",
+      options:[
+        { key:"A", text:"Your request has been forwarded to the relevant department for further handling.", result:"Partial", trust:0, emotion:0, effort:0,
+          shortWhy:"Sounds official, but says nothing concrete.",
+          longWhy:"Generic process language sounds professional, but it doesn't tell the customer what actually happens next or when." },
+        { key:"B", text:"I can see a previous ticket for this issue, so I'll attach that history to the escalation — you won't need to repeat the details. The technical team will review it, and your next update will come through this chat.", result:"Strong", trust:2, emotion:1, effort:-2, tool:"Trust Loop + Reducing Customer Effort",
+          shortWhy:"Uses history, explains escalation, and confirms the channel.",
+          longWhy:"Referencing the previous ticket avoids repeated effort, and naming both the next step and the update channel gives the customer a concrete reason to wait." },
+        { key:"C", text:"You can also reach out directly to our technical support line to speed up the follow-up.", result:"Risky", trust:-2, emotion:-1, effort:2,
+          shortWhy:"Pushes the follow-up back onto the customer.",
+          longWhy:"Asking the customer to contact another line themselves increases their effort and can feel like the agent is passing the case away." },
+        { key:"D", text:"This kind of issue is usually caused by line degradation or aging equipment, and sometimes by network congestion depending on how many users are connected at once.", result:"Risky", trust:-1, emotion:-1, effort:1,
+          shortWhy:"Informative, but never says what happens next.",
+          longWhy:"This gives a detailed technical explanation of possible causes, which can sound thorough, but it never tells the customer what will actually happen or when." }
+      ]
+    },
+    {
+      key:"closing_message",
+      tileLabel:"Closing Message",
+      question:"Choose the best closing message.",
+      moment:"Closing without reassurance can weaken the final memory.",
+      surprise:{ who:"Customer says", msg:"So this will not be fixed now?" },
+      primaryTool:"Closing with Confidence",
+      correctKey:"C",
+      options:[
+        { key:"A", text:"That's correct, it can't be resolved immediately.", result:"Risky", trust:-2, emotion:-2, effort:0,
+          shortWhy:"Honest, but delivered with no reassurance.",
+          longWhy:"Confirming the delay directly is accurate, but without any reassurance it can feel dismissive at the moment the customer needed support most." },
+        { key:"B", text:"Don't worry about that — I'll personally follow up with the technical team myself to make sure this gets resolved as quickly as it possibly can be.", result:"Risky", trust:1, emotion:1, effort:0,
+          shortWhy:"Reassuring, but a promise the agent can't guarantee.",
+          longWhy:"This feels good in the moment, but committing personally to a fast fix creates a promise that may not be kept, risking bigger trust damage later." },
+        { key:"C", text:"The technical review is still required, but your case history is attached so you won't repeat anything, and updates will continue here.", result:"Strong", trust:2, emotion:1, effort:-1, tool:"Closing with Confidence + Trust Repair",
+          shortWhy:"Honest about the delay and clear about what's next.",
+          longWhy:"This confirms the technical review is still needed, but pairs that honesty with a clear next step and a promise not to repeat details, which closes the case with confidence." },
+        { key:"D", text:"Your case has been processed according to standard escalation procedure.", result:"Partial", trust:-1, emotion:-1, effort:0,
+          shortWhy:"Confirms action, but sounds distant.",
+          longWhy:"Referencing \"standard procedure\" confirms something happened, but the impersonal tone leaves the customer without any real reassurance." }
+      ]
+    }
+  ];
+
+  var HABIT_OPTIONS = [
+    { key:"A", text:"Treat every chat as a journey: acknowledge, clarify, update, guide, and close with confidence.", result:"Strong",
+      feedback:"This captures the full journey mindset and connects every stage of the course together." },
+    { key:"B", text:"Always collect every detail before responding, so nothing gets missed.", result:"Partial",
+      feedback:"Details matter, but this misses acknowledging how the customer feels before diving into questions." },
+    { key:"C", text:"Focus on resolving each ticket as quickly as possible.", result:"Risky",
+      feedback:"Speed matters, but a fast close without guidance can still leave the customer feeling unsure." }
+  ];
+
+  var TILE_LABELS = ["Start","First Response","Clarification","Waiting Time","Solution / Next Step","Closing Message","Customer Memory"];
+
+  /* ============================================================
+     STATE
+     ============================================================ */
+  var state = {
+    agentName:"",
+    trust:5,
+    emotion:5,
+    effort:5,
+    score:0,           // Experience Score, 0-15, from the 5 main decisions only
+    stageIndex:0,      // 0..4 maps to STAGES; 5 = customer memory phase
+    memoryPhase:"reflection", // "reflection" -> "habit"
+    log:[],            // per-stage record, see handleChoice for shape
+    habitChoice:null,
+    caseId:null
+  };
+
+  function clamp(n){ return Math.max(0, Math.min(10, n)); }
+  function signed(n){ return (n>0?"+":"") + n; }
+  function pointsForResult(r){ if(r==="Strong") return 3; if(r==="Partial") return 1; return 0; }
+
+  /* ============================================================
+     DOM REFS
+     ============================================================ */
+  var $ = function(id){ return document.getElementById(id); };
+  var screens = { welcome:$("screen-welcome"), game:$("screen-game"), final:$("screen-final") };
+
+  function showScreen(name){
+    Object.keys(screens).forEach(function(k){ screens[k].classList.toggle("active", k===name); });
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+
+  function updateScorePill(){
+    var pill = $("scorePill");
+    pill.textContent = "Score: " + state.score + "/15";
+  }
+
+  /* ============================================================
+     MOOD (avatar ring + tag color reacts to emotion score)
+     ============================================================ */
+  function moodColor(){
+    if(state.emotion>=7) return {color:"#2fd1c9", label:"Calmer, building confidence"};
+    if(state.emotion>=4) return {color:"#f2a93b", label:"Frustrated, still seeking help"};
+    return {color:"#ff5f6d", label:"Tense, at risk of escalating"};
+  }
+  function renderMood(){
+    var m = moodColor();
+    document.documentElement.style.setProperty("--mood-color", m.color);
+    var tag = $("moodTag");
+    if(tag){ tag.innerHTML = '<span class="mood-dot"></span>'+m.label; }
+  }
+
+  /* ============================================================
+     JOURNEY PATH RENDER (vertical mission rail)
+     ============================================================ */
+  function renderPath(){
+    var wrap = $("journeyPath");
+    wrap.innerHTML = "";
+    var currentTileIndex = state.stageIndex + 1;
+    TILE_LABELS.forEach(function(label, i){
+      var item = document.createElement("div");
+      item.className = "rail-item";
+      var status = "Upcoming";
+      if(i < currentTileIndex){ item.classList.add("done"); status = "Completed"; }
+      if(i === currentTileIndex){ item.classList.add("active"); status = "In progress"; }
+      item.innerHTML =
+        '<div class="rail-connector"></div>' +
+        '<div class="rail-node">'+ (i < currentTileIndex ? "&#10003;" : i) +'</div>' +
+        '<div class="rail-body"><div class="rail-label">'+label+'</div><div class="rail-status">'+status+'</div></div>';
+      wrap.appendChild(item);
+    });
+    $("journeyCount").textContent = "Stage "+Math.min(currentTileIndex, 6)+" of 6";
+  }
+
+  /* ============================================================
+     METERS RENDER
+     ============================================================ */
+  var prevMeters = {trust:5, emotion:5, effort:5};
+  function renderMeters(animateFlash){
+    $("trustVal").textContent = state.trust + "/10";
+    $("emotionVal").textContent = state.emotion + "/10";
+    $("effortVal").textContent = state.effort + "/10";
+    $("trustFill").style.width = (state.trust*10) + "%";
+    $("emotionFill").style.width = (state.emotion*10) + "%";
+    $("effortFill").style.width = (state.effort*10) + "%";
+
+    if(animateFlash){
+      flashMeter("trust", state.trust - prevMeters.trust);
+      flashMeter("emotion", state.emotion - prevMeters.emotion);
+      flashMeter("effort", state.effort - prevMeters.effort, true);
+    }
+    prevMeters = { trust:state.trust, emotion:state.emotion, effort:state.effort };
+    renderMood();
+  }
+
+  function flashMeter(name, delta, inverse){
+    if(delta === 0) return;
+    var el = $(name+"Flash");
+    if(!el) return;
+    var good = inverse ? delta < 0 : delta > 0;
+    el.textContent = (delta>0?"+":"") + delta;
+    el.classList.remove("up","down");
+    el.classList.add(good ? "up" : "down");
+    el.classList.add("show");
+    setTimeout(function(){ el.classList.remove("show"); }, 1600);
+  }
+
+  /* ============================================================
+     STAGE PANEL RENDER (decision stages 0-4) — kept compact
+     ============================================================ */
+  function renderStage(){
+    renderPath();
+    renderMeters(false);
+    var panel = $("stagePanel");
+    var stage = STAGES[state.stageIndex];
+
+    var html = "";
+    html += '<span class="stage-tag">Stage '+(state.stageIndex+1)+' of 6</span>';
+    html += '<h2 class="stage-title">'+stage.tileLabel+'</h2>';
+    html += '<div class="moment-box">'+stage.moment+'</div>';
+
+    if(stage.customerMessage){
+      html += '<div class="customer-msg"><span class="who">Customer says</span>'+stage.customerMessage+'</div>';
+    }
+    if(stage.surprise){
+      html += '<div class="surprise-card"><span class="who">'+stage.surprise.who+'</span><div class="msg">"'+stage.surprise.msg+'"</div></div>';
+    }
+
+    html += '<p class="question">'+stage.question+'</p>';
+    html += '<div class="options" id="optionsWrap">';
+    stage.options.forEach(function(opt){
+      html += '<button class="option" data-key="'+opt.key+'"><span class="opt-key">'+opt.key+'.</span>'+opt.text+'</button>';
+    });
+    html += '</div>';
+    html += '<div id="feedbackWrap"></div>';
+
+    panel.innerHTML = html;
+
+    var buttons = panel.querySelectorAll(".option");
+    buttons.forEach(function(btn){
+      btn.addEventListener("click", function(){ handleChoice(stage, btn.dataset.key, buttons); });
+    });
+  }
+
+  function handleChoice(stage, key, buttons){
+    var opt = stage.options.filter(function(o){ return o.key===key; })[0];
+    var correctOpt = stage.options.filter(function(o){ return o.key===stage.correctKey; })[0];
+
+    buttons.forEach(function(b){
+      b.disabled = true;
+      if(b.dataset.key === key) b.classList.add("chosen");
+    });
+
+    state.trust = clamp(state.trust + opt.trust);
+    state.emotion = clamp(state.emotion + opt.emotion);
+    state.effort = clamp(state.effort + opt.effort);
+    renderMeters(true);
+
+    var points = pointsForResult(opt.result);
+    state.score += points;
+    updateScorePill();
+
+    var toolMissed = !opt.tool ? stage.primaryTool : null;
+
+    state.log.push({
+      tileLabel: stage.tileLabel,
+      choiceText: opt.text,
+      result: opt.result,
+      points: points,
+      trust: opt.trust,
+      emotion: opt.emotion,
+      effort: opt.effort,
+      tool: opt.tool || null,
+      toolMissed: toolMissed,
+      shortWhy: opt.shortWhy,
+      longWhy: opt.longWhy,
+      correctText: correctOpt.text,
+      correctWhy: correctOpt.longWhy,
+      correctTool: correctOpt.tool,
+      wasCorrect: opt.key === stage.correctKey
+    });
+
+    // Compact gameplay feedback: Result / Why / Impact / Tool only.
+    var fb = $("feedbackWrap");
+    var html = '<div class="feedback">';
+    html += '<span class="result-badge result-'+opt.result+'">'+opt.result+' &middot; '+points+' pt'+(points===1?'':'s')+'</span>';
+
+    html += '<div class="fb-label">Why</div>';
+    html += '<div class="fb-line">'+opt.shortWhy+'</div>';
+
+    html += '<div class="fb-label">Impact</div>';
+    html += '<div class="impact-compact">Trust <b>'+signed(opt.trust)+'</b> &nbsp;|&nbsp; Emotion <b>'+signed(opt.emotion)+'</b> &nbsp;|&nbsp; Effort <b>'+signed(opt.effort)+'</b></div>';
+
+    html += '<div class="fb-label">Tool</div>';
+    if(opt.tool){
+      html += '<div class="tool-line">'+opt.tool+'</div>';
+    } else {
+      html += '<div class="tool-line missed">Tool missed: <b>'+stage.primaryTool+'</b></div>';
+    }
+
+    html += '<button class="btn btn-primary continue-btn" id="continueBtn">Continue</button>';
+    html += '</div>';
+    fb.innerHTML = html;
+
+    $("continueBtn").addEventListener("click", function(){
+      state.stageIndex++;
+      if(state.stageIndex < STAGES.length){
+        renderStage();
+      } else {
+        state.memoryPhase = "reflection";
+        renderMemory();
+      }
+    });
+
+    fb.scrollIntoView({behavior:"smooth", block:"nearest"});
+  }
+
+  /* ============================================================
+     STAGE 6 — CUSTOMER MEMORY (emotional payoff + habit)
+     ============================================================ */
+  function memoryStatement(){
+    if(state.trust>=8) return "Your customer left feeling guided, updated, and not alone.";
+    if(state.trust>=5) return "Your customer received some help, but the experience still had moments of uncertainty.";
+    return "Your customer left with low trust and may escalate again.";
+  }
+  function memoryTail(){
+    if(state.trust>=8) return "guided, updated, and not left alone.";
+    if(state.trust>=5) return "helped, but the experience still had moments of uncertainty.";
+    return "low trust, and may escalate again.";
+  }
+
+  function renderMemory(){
+    renderPath();
+    renderMeters(false);
+    var panel = $("stagePanel");
+    var reflection = memoryStatement();
+
+    var html = "";
+    html += '<span class="stage-tag">Stage 6 of 6</span>';
+    html += '<h2 class="stage-title">Customer Memory</h2>';
+
+    html += '<div class="memory-frame"><div class="memory-inner">';
+    html += '<div class="memory-avatar"><span>RW</span></div>';
+    html += '<p class="memory-statement">'+reflection+'</p>';
+    html += '<p class="memory-caption">The customer will not remember only the answer. They will remember whether they felt guided, updated, and respected.</p>';
+    html += '</div></div>';
+
+    if(state.memoryPhase==="reflection"){
+      html += '<button class="btn btn-primary" id="toHabitBtn" style="margin-top:4px;">Continue</button>';
+      panel.innerHTML = html;
+      $("toHabitBtn").addEventListener("click", function(){
+        state.memoryPhase = "habit";
+        renderMemory();
+      });
+      return;
+    }
+
+    html += '<p class="question" style="margin-top:18px;">Choose the best final internal habit for tomorrow.</p>';
+    html += '<div class="options" id="habitOptionsWrap">';
+    HABIT_OPTIONS.forEach(function(opt){
+      html += '<button class="option" data-key="'+opt.key+'"><span class="opt-key">'+opt.key+'.</span>'+opt.text+'</button>';
+    });
+    html += '</div>';
+    html += '<div id="habitFeedbackWrap"></div>';
+    panel.innerHTML = html;
+
+    var buttons = panel.querySelectorAll(".option");
+    buttons.forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var opt = HABIT_OPTIONS.filter(function(o){ return o.key===btn.dataset.key; })[0];
+        buttons.forEach(function(b){
+          b.disabled = true;
+          if(b.dataset.key === opt.key) b.classList.add("chosen");
+        });
+        state.habitChoice = opt;
+
+        var fb = $("habitFeedbackWrap");
+        var fhtml = '<div class="feedback">';
+        fhtml += '<span class="result-badge result-'+opt.result+'">'+opt.result+'</span>';
+        fhtml += '<div class="fb-line">'+opt.feedback+'</div>';
+        fhtml += '<button class="btn btn-primary continue-btn" id="finishBtn">See Final Report</button>';
+        fhtml += '</div>';
+        fb.innerHTML = fhtml;
+        $("finishBtn").addEventListener("click", renderFinal);
+        fb.scrollIntoView({behavior:"smooth", block:"nearest"});
+      });
+    });
+  }
+
+  /* ============================================================
+     FINAL REPORT
+     ============================================================ */
+  function getBadge(){
+    if(state.score>=13 && state.trust>=8 && state.emotion>=8 && state.effort<=3) return "Experience Architect";
+    if(state.score>=10) return "Trust Builder";
+    if(state.score>=7) return "Stable but Incomplete";
+    return "Experience at Risk";
+  }
+
+  function makeCaseId(){
+    var d = new Date();
+    var pad = function(n){ return (n<10?"0":"")+n; };
+    var stamp = d.getFullYear()+""+pad(d.getMonth()+1)+pad(d.getDate())+"-"+pad(d.getHours())+pad(d.getMinutes());
+    var rand = Math.floor(Math.random()*900+100);
+    return "CX-"+stamp+"-"+rand;
+  }
+
+  function renderFinal(){
+    if(!state.caseId) state.caseId = makeCaseId();
+
+    $("reportAgent").textContent = state.agentName || "Unnamed Agent";
+    $("reportCaseId").innerHTML = "CASE FILE<br>"+state.caseId;
+
+    $("finalScore").innerHTML = state.trust + '<span>/10 trust</span>';
+    $("badgePill").textContent = getBadge();
+    $("statScore").textContent = state.score + "/15";
+    $("statTrust").textContent = state.trust+"/10";
+    $("statEmotion").textContent = state.emotion+"/10";
+    $("statEffort").textContent = state.effort+"/10";
+    $("memoryStatementFinal").textContent = "Your customer left with " + state.trust + "/10 trust — " + memoryTail();
+
+    var effortNote = $("effortNote");
+    if(state.trust>=7 && state.effort>=6){
+      effortNote.style.display = "block";
+      effortNote.textContent = "The customer may trust the agent, but the journey still required too much effort.";
+    } else {
+      effortNote.style.display = "none";
+      effortNote.textContent = "";
+    }
+
+    // Strongest / weakest moment now ranked primarily by points earned,
+    // with the trust+emotion-effort blend as a tiebreaker.
+    function rankScore(e){ return e.points*10 + (e.trust + e.emotion - e.effort); }
+    var sorted = state.log.slice().sort(function(a,b){ return rankScore(b)-rankScore(a); });
+    var strongest = sorted[0];
+    var weakest = sorted[sorted.length-1];
+
+    $("strongestMoment").innerHTML = '<b>'+strongest.tileLabel+'</b><div class="reason">'+strongest.shortWhy+'</div>';
+    $("weakestMoment").innerHTML = '<b>'+weakest.tileLabel+'</b><div class="reason">'+weakest.shortWhy+'</div>';
+
+    var habit = state.habitChoice;
+    $("habitBox").innerHTML =
+      '<div style="margin-bottom:6px;"><b>"'+habit.text+'"</b></div>'+
+      '<div style="color:var(--text-muted); font-size:13px;">'+habit.feedback+'</div>';
+
+    // Review My Journey — full detail lives here since gameplay feedback stays compact.
+    var reviewHtml = "";
+    state.log.forEach(function(entry, i){
+      reviewHtml += '<div class="review-item">';
+      reviewHtml += '<div class="stage-name">Stage '+(i+1)+' — '+entry.tileLabel+
+        '<span class="result-badge result-'+entry.result+'">'+entry.result+'</span>' +
+        '<span class="points-badge">'+entry.points+'/3 pts</span></div>';
+      reviewHtml += '<div class="choice-text">Your response: '+entry.choiceText+'</div>';
+      reviewHtml += '<div class="impact-compact">Trust <b>'+signed(entry.trust)+'</b> &nbsp;|&nbsp; Emotion <b>'+signed(entry.emotion)+'</b> &nbsp;|&nbsp; Effort <b>'+signed(entry.effort)+'</b></div>';
+      if(entry.tool){ reviewHtml += '<div class="tool-line">Tool applied: <b>'+entry.tool+'</b></div>'; }
+      else { reviewHtml += '<div class="tool-line missed">Tool missed: <b>'+entry.toolMissed+'</b></div>'; }
+      reviewHtml += '<div class="reason">'+entry.longWhy+'</div>';
+      if(!entry.wasCorrect){
+        reviewHtml += '<div class="review-correct"><span class="cap">Strongest response</span>'+entry.correctText+
+          '<div style="margin-top:5px; color:var(--text-muted);">'+entry.correctWhy+'</div></div>';
+      }
+      reviewHtml += '</div>';
+    });
+    $("reviewList").innerHTML = reviewHtml;
+
+    if(state.agentName){
+      $("agentPill").style.display = "inline-block";
+      $("agentPill").textContent = "Agent " + state.agentName;
+    }
+
+    showScreen("final");
+  }
+
+  /* ============================================================
+     COPY RESULT
+     ============================================================ */
+  function buildCopyText(){
+    var lines = [];
+    lines.push("THE PERFECT EXPERIENCE MINI-GAME — RESULT");
+    lines.push("Case file: " + (state.caseId || makeCaseId()));
+    lines.push("Agent: " + (state.agentName || "Unnamed Agent"));
+    lines.push("Experience Score: " + state.score + "/15");
+    lines.push("Trust: " + state.trust + "/10");
+    lines.push("Emotion Stability: " + state.emotion + "/10");
+    lines.push("Customer Effort: " + state.effort + "/10 — lower is better");
+    lines.push("Badge: " + getBadge());
+    lines.push("Customer memory: " + memoryStatement());
+    function rankScore(e){ return e.points*10 + (e.trust + e.emotion - e.effort); }
+    var sorted = state.log.slice().sort(function(a,b){ return rankScore(b)-rankScore(a); });
+    lines.push("Strongest moment: " + sorted[0].tileLabel);
+    lines.push("Weakest moment: " + sorted[sorted.length-1].tileLabel);
+    lines.push("Habit for tomorrow: " + state.habitChoice.text);
+    return lines.join("\n");
+  }
+
+  function showToast(msg){
+    var toast = $("copyToast");
+    toast.textContent = msg;
+    toast.classList.add("show");
+    setTimeout(function(){ toast.classList.remove("show"); }, 2200);
+  }
+
+  /* ============================================================
+     RESTART
+     ============================================================ */
+  function restart(){
+    state.agentName = "";
+    state.trust = 5;
+    state.emotion = 5;
+    state.effort = 5;
+    state.score = 0;
+    state.stageIndex = 0;
+    state.memoryPhase = "reflection";
+    state.log = [];
+    state.habitChoice = null;
+    state.caseId = null;
+    prevMeters = {trust:5, emotion:5, effort:5};
+    $("agentPill").style.display = "none";
+    $("scorePill").style.display = "none";
+    $("agentNameInput").value = "";
+    updateScorePill();
+    showScreen("welcome");
+  }
+
+  /* ============================================================
+     EVENT WIRING
+     ============================================================ */
+  $("startBtn").addEventListener("click", function(){
+    state.agentName = $("agentNameInput").value.trim();
+    if(state.agentName){
+      $("agentPill").style.display = "inline-block";
+      $("agentPill").textContent = "Agent " + state.agentName;
+    }
+    $("scorePill").style.display = "inline-block";
+    updateScorePill();
+    showScreen("game");
+    renderStage();
+  });
+
+  $("copyBtn").addEventListener("click", function(){
+    var text = buildCopyText();
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){
+        showToast("Result copied to clipboard");
+      }).catch(function(){ fallbackCopy(text); });
+    } else {
+      fallbackCopy(text);
+    }
+  });
+
+  function fallbackCopy(text){
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand("copy"); showToast("Result copied to clipboard"); }
+    catch(e){ showToast("Copy not supported on this device"); }
+    document.body.removeChild(ta);
+  }
+
+  $("restartBtn").addEventListener("click", restart);
+
+  // initial paint
+  renderMood();
+  renderMeters(false);
+
+})();
+</script>
+</body>
+</html>
